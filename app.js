@@ -75,7 +75,7 @@ function selectStar(starElement, qId, suffix) {
 
 async function submitSurvey() {
     try {
-        const response = await fetch('YOUR_APPS_SCRIPT_URL', {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxblPHQlqTYFKXsQyzW0kebGTbwEZRE1bUuV-UQ_qWF3AohVfasqgyqQhugnqjAKlpe/exec', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(surveyData)
