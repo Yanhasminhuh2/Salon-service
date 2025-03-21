@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .suffix-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .suffix-tab {
+            padding: 10px 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .suffix-tab.active {
+            background: #0084ff;
+            color: white;
+            border-color: #0084ff;
+        }
+        .question-bubble {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stars-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .star {
+            cursor: pointer;
+            font-size: 28px;
+            color: #ccc;
+            transition: all 0.2s;
+        }
+        .star.active {
+            color: #ffd700;
+            transform: scale(1.1);
+        }
+        #submit-btn {
+            background: #0084ff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            float: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="suffix-tabs" id="suffix-tabs"></div>
+        <div id="questions-container"></div>
+        <button id="submit-btn" onclick="submitSurvey()">Gửi đánh giá</button>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
