@@ -2,85 +2,51 @@
 <html>
 <head>
     <base target="_top">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --star-size: 40px;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #f8f9fa;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
+        .chat-container {
             max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .question-card {
-            margin: 25px 0;
+            margin: 20px auto;
             padding: 20px;
-            border-left: 4px solid var(--secondary-color);
-            background: #f8f9fa;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        .question-card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
             border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .question-text {
-            font-size: 1.4rem;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-
         .stars-container {
             display: flex;
-            gap: 12px;
-            margin-top: 15px;
+            gap: 5px;
+            margin-top: 10px;
         }
-
         .star {
             cursor: pointer;
-            font-size: var(--star-size);
+            font-size: 24px;
             color: #ddd;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
-
         .star.active {
             color: #ffd700;
-            transform: scale(1.1);
         }
-
         #submit-btn {
-            background: var(--secondary-color);
+            background: #007bff;
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.2rem;
+            padding: 10px 20px;
+            border-radius: 20px;
             cursor: pointer;
-            display: block;
-            margin: 30px auto 0;
-            transition: background 0.3s;
-        }
-
-        #submit-btn:hover {
-            background: #2980b9;
+            float: right;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="chat-container" id="chat-container">
         <div id="questions-container"></div>
-        <button id="submit-btn" onclick="handleSubmit()">GỬI ĐÁNH GIÁ</button>
+        <button id="submit-btn" onclick="submitSurvey()">Gửi đánh giá</button>
     </div>
-    <script src="https://raw.githubusercontent.com/Yanhasminhuh2/Salon-service/refs/heads/main/app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
