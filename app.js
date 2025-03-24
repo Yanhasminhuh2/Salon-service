@@ -1,88 +1,109 @@
 const CONFIG = {
-    scriptURL: 'https://script.google.com/macros/s/AKfycbxgQRQqOlhzmcGvKQyJgeB7mF8e-M3Bs2TeYrgq8OvJjsTlEqCQxB1fN3dBYYjerO6h/exec',
+    scriptURL: 'YOUR_APPS_SCRIPT_URL',
     groups: ['Cat', 'Uon', 'Nhuom', 'Phu', 'Overall']
 };
 
 let surveyData = {};
 
 async function init() {
-    // Load questions từ Google Sheets
-    const questions = await fetch(CONFIG.scriptURL + '?action=getQuestions')
-        .then(res => res.json());
-    
-    // Parse URL parameters
-    const params = new URLSearchParams(location.search);
-    
-    CONFIG.groups.forEach(group => {
-        const suffix = params.get(group);
-        const questionIds = params.get(`${group}_questions`)?.split(',') || [];
+    try {
+        // Load questions từ Google Sheets
+        const questions = await fetch(`${CONFIG.scriptURL}?action=getQuestions`)
+            .then(res => res.json());
         
-        if(suffix && questionIds.length) {
-            surveyData[group] = {
-                suffix: suffix,
-                questions: questionIds.map(qId => ({
-                    id: qId,
-                    text: questions.find(q => q.id === qId)?.text || 'Câu hỏi không xác định'
-                })),
-                responses: {}
-            };
-        }
-    });
-    
-    renderQuestions();
+        // Parse URL parameters
+        const params = new URLSearchParams(location.search);
+        
+        CONFIG.groups.forEach(group => {
+            const suffix = params.get(group);
+            const questionIds = params.get(`${group}_questions`)?.split(',') || [];
+            
+            if(suffix && questionIds.length) {
+                surveyData[group] = {
+                    suffix: suffix,
+                    questions: questionIds.map(qId => ({
+                        id: qId,
+                        text: questions.find(q => q.id === qId)?.text || 'Câu hỏi không xác định'
+                    })),
+                    responses: {}
+                };
+            }
+        });
+        
+        renderQuestions();
+    } catch (error) {
+        alert('Lỗi tải dữ liệu! Vui lòng thử lại.');
+        console.error('Lỗi khởi tạo:', error);
+    }
 }
 
 function renderQuestions() {
     const container = document.getElementById('questions-container');
     container.innerHTML = '';
     
-    Object.entries(surveyData).forEach(([group, data]) => {
-        data.questions.forEach(q => {
-            container.innerHTML += `
-                <div class="question-card" data-group="${group}" data-qid="${q.id}">
-                    <div>${q.text}</div>
-                    ${q.type === 'text' ? 
-                        '<textarea class="text-input"></textarea>' : 
-                        `<div class="stars-container">
-                            ${[1,2,3,4,5].map(score => `
-                                <span class="star" data-score="${score}" 
-                                      onclick="selectScore(this, '${group}', '${q.id}')">★</span>
-                            `).join('')}
-                        </div>`
-                    }
+    Object.values(surveyData).forEach(group => {
+        group.questions.forEach(q => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.innerHTML = `
+                <div class="question-text">${q.text}</div>
+                <div class="stars-container">
+                    ${[1,2,3,4,5].map(score => `
+                        <div class="star" 
+                             data-score="${score}"
+                             onclick="selectScore(this, '${group.suffix}', '${q.id}')">★</div>
+                    `).join('')}
                 </div>
             `;
+            container.appendChild(card);
         });
     });
 }
 
-function selectScore(element, group, qId) {
+function selectScore(element, suffix, qId) {
     const stars = element.parentElement.children;
     Array.from(stars).forEach(star => {
         star.classList.toggle('active', star.dataset.score <= element.dataset.score);
     });
-    surveyData[group].responses[qId] = parseInt(element.dataset.score);
+    
+    const group = Object.values(surveyData).find(g => g.suffix === suffix);
+    group.responses[qId] = parseInt(element.dataset.score);
 }
 
-async function submitSurvey() {
-    const payload = Object.entries(surveyData).reduce((acc, [group, data]) => {
-        acc[group] = {
-            suffix: data.suffix,
-            responses: data.responses
-        };
-        return acc;
-    }, {});
-
+async function handleSubmit() {
     try {
-        await fetch(CONFIG.scriptURL, {
+        const payload = Object.entries(surveyData).reduce((acc, [group, data]) => {
+            if(data.suffix && Object.keys(data.responses).length > 0) {
+                acc[group] = {
+                    suffix: data.suffix,
+                    responses: data.responses
+                };
+            }
+            return acc;
+        }, {});
+
+        if(Object.keys(payload).length === 0) {
+            alert('Vui lòng chọn ít nhất một câu hỏi!');
+            return;
+        }
+
+        const response = await fetch(CONFIG.scriptURL, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        alert('Cảm ơn đánh giá của bạn!');
-        window.location.reload();
+        
+        const result = await response.json();
+        
+        if(result.status === 'success') {
+            alert('Đánh giá thành công! Cảm ơn bạn!');
+            window.location.reload();
+        } else {
+            throw new Error(result.message || 'Lỗi không xác định');
+        }
     } catch (error) {
-        console.error('Lỗi:', error);
+        alert(`Lỗi: ${error.message}`);
+        console.error('Lỗi gửi dữ liệu:', error);
     }
 }
 
