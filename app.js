@@ -1,93 +1,89 @@
 const CONFIG = {
-    questionPrefix: 'q',
-    defaultSuffix: 'general'
+    scriptURL: 'https://script.google.com/macros/s/AKfycbxgQRQqOlhzmcGvKQyJgeB7mF8e-M3Bs2TeYrgq8OvJjsTlEqCQxB1fN3dBYYjerO6h/exec',
+    groups: ['Cat', 'Uon', 'Nhuom', 'Phu', 'Overall']
 };
 
 let surveyData = {};
-let currentSuffix = '';
 
-function initializeSurvey() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const suffixConfig = urlParams.get('suffix_config') || `${CONFIG.defaultSuffix}:1`;
+async function init() {
+    // Load questions từ Google Sheets
+    const questions = await fetch(CONFIG.scriptURL + '?action=getQuestions')
+        .then(res => res.json());
     
-    // Parse suffix config
-    const suffixGroups = suffixConfig.split('|').reduce((acc, group) => {
-        const [suffix, questions] = group.split(':');
-        acc[suffix] = questions.split(',').map(q => `${CONFIG.questionPrefix}${q.trim()}`);
-        return acc;
-    }, {});
+    // Parse URL parameters
+    const params = new URLSearchParams(location.search);
     
-    // Initialize data structure
-    surveyData = Object.fromEntries(
-        Object.entries(suffixGroups).map(([suffix, questions]) => [
-            suffix,
-            Object.fromEntries(questions.map(q => [q, null]))
-        )
-    );
-    
-    renderSuffixTabs(Object.keys(suffixGroups));
-    switchSuffix(Object.keys(suffixGroups)[0]);
-}
-
-function renderSuffixTabs(suffixes) {
-    const container = document.getElementById('suffix-tabs');
-    container.innerHTML = suffixes.map(suffix => `
-        <div class="suffix-tab" onclick="switchSuffix('${suffix}')">${suffix}</div>
-    `).join('');
-}
-
-function switchSuffix(suffix) {
-    currentSuffix = suffix;
-    document.querySelectorAll('.suffix-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.textContent === suffix);
+    CONFIG.groups.forEach(group => {
+        const suffix = params.get(group);
+        const questionIds = params.get(`${group}_questions`)?.split(',') || [];
+        
+        if(suffix && questionIds.length) {
+            surveyData[group] = {
+                suffix: suffix,
+                questions: questionIds.map(qId => ({
+                    id: qId,
+                    text: questions.find(q => q.id === qId)?.text || 'Câu hỏi không xác định'
+                })),
+                responses: {}
+            };
+        }
     });
-    renderQuestions(suffix);
+    
+    renderQuestions();
 }
 
-function renderQuestions(suffix) {
+function renderQuestions() {
     const container = document.getElementById('questions-container');
-    const questions = Object.keys(surveyData[suffix]);
+    container.innerHTML = '';
     
-    container.innerHTML = questions.map(qId => `
-        <div class="question-bubble" data-id="${qId}">
-            <div class="question-text">${qId.replace('q', 'Câu hỏi ')}</div>
-            <div class="stars-container">
-                ${Array(5).fill().map((_, i) => `
-                    <span class="star" 
-                           data-value="${i+1}" 
-                           onclick="selectStar(this, '${qId}', '${suffix}')">★</span>
-                `).join('')}
-            </div>
-        </div>
-    `).join('');
+    Object.entries(surveyData).forEach(([group, data]) => {
+        data.questions.forEach(q => {
+            container.innerHTML += `
+                <div class="question-card" data-group="${group}" data-qid="${q.id}">
+                    <div>${q.text}</div>
+                    ${q.type === 'text' ? 
+                        '<textarea class="text-input"></textarea>' : 
+                        `<div class="stars-container">
+                            ${[1,2,3,4,5].map(score => `
+                                <span class="star" data-score="${score}" 
+                                      onclick="selectScore(this, '${group}', '${q.id}')">★</span>
+                            `).join('')}
+                        </div>`
+                    }
+                </div>
+            `;
+        });
+    });
 }
 
-function selectStar(starElement, qId, suffix) {
-    const value = parseInt(starElement.dataset.value);
-    const stars = starElement.parentElement.children;
-    
-    Array.from(stars).forEach((s, index) => {
-        s.classList.toggle('active', index < value);
+function selectScore(element, group, qId) {
+    const stars = element.parentElement.children;
+    Array.from(stars).forEach(star => {
+        star.classList.toggle('active', star.dataset.score <= element.dataset.score);
     });
-    
-    surveyData[suffix][qId] = value;
+    surveyData[group].responses[qId] = parseInt(element.dataset.score);
 }
 
 async function submitSurvey() {
+    const payload = Object.entries(surveyData).reduce((acc, [group, data]) => {
+        acc[group] = {
+            suffix: data.suffix,
+            responses: data.responses
+        };
+        return acc;
+    }, {});
+
     try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxblPHQlqTYFKXsQyzW0kebGTbwEZRE1bUuV-UQ_qWF3AohVfasqgyqQhugnqjAKlpe/exec', {
+        await fetch(CONFIG.scriptURL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(surveyData)
+            body: JSON.stringify(payload)
         });
-
-        if(response.ok) {
-            alert('Đánh giá thành công!');
-            window.location.reload();
-        }
+        alert('Cảm ơn đánh giá của bạn!');
+        window.location.reload();
     } catch (error) {
         console.error('Lỗi:', error);
     }
 }
 
-window.onload = initializeSurvey;
+window.onload = init;
